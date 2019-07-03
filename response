@@ -1,1 +1,9 @@
+//when called, lights up LED
+void response1(){
 
+
+}
+//when called, response2
+void response2(){
+
+}
