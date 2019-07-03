@@ -1,0 +1,1 @@
+Repository for our smart car project. The goal of the project is to detect distracted drivers and take actions to get them back on task.
