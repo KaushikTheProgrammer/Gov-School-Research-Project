@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import time
+import os
 
 def createLookingAwayDataset():
     
@@ -52,4 +53,8 @@ def oneHotLabel(imgName):
     return label
 
 def labelDatasets():
-    
+    trainImages = []
+    for img in os.listdir(os.fsencode("training")):
+        
+
+labelDatasets()
