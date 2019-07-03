@@ -52,6 +52,4 @@ def oneHotLabel(imgName):
     return label
 
 def labelDatasets():
-
-
-
+    
