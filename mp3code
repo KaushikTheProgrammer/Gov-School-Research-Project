@@ -23,15 +23,18 @@ void setup() {
 void playSound(int sound) {
   // open wave file from sdcard
   
+  //please look back at the road
   if (sound==1){
   File myFile = SD.open("test.wav");
   }
   
+  //you are distracted. please look back at the road
   else if (sound ==2){
   File myFile = SD.open("test.wav");
   }
   
-    else {
+  //Initiating computer override in 5...4...3...2...1
+  else {
   File myFile = SD.open("test.wav");
   }
   
