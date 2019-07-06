@@ -20,11 +20,21 @@ void setup() {
   Audio.begin(88200, 100);
 }
 
-void loop() {
-  int count = 0;
-
+void playSound(int sound) {
   // open wave file from sdcard
+  
+  if (sound==1){
   File myFile = SD.open("test.wav");
+  }
+  
+  else if (sound ==2){
+  File myFile = SD.open("test.wav");
+  }
+  
+    else {
+  File myFile = SD.open("test.wav");
+  }
+  
   if (!myFile) {
     // if the file didn't open, print an error and stop
     Serial.println("error opening test.wav");
@@ -46,15 +56,10 @@ void loop() {
     // Feed samples to audio
     Audio.write(buffer, S);
 
-    // Every 100 block print a '.'
-    count++;
-    if (count == 100) {
-      Serial.print(".");
-      count = 0;
-    }
+   
   }
   myFile.close();
 
-  Serial.println("End of file. Thank you for listening!");
+  
   while (true) ;
 }
