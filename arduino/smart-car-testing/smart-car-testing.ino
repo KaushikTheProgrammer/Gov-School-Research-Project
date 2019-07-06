@@ -210,23 +210,43 @@ int change_state() {
   }
 }
 
+/*
+ * Main Loop:
+ * 
+ * Loop will proceed with the following structure
+ * 
+ * 1. Take in information from line_tracking and
+ *    ultrasonic functions
+ * 2. Send motor commands based on line tracking 
+ *    and distance sensing
+ * 3. Read bluetooth input; if true, increment
+ *    time_distracted; else, increment cooldown
+ * 4. Change state if necessary based on time_distracted (a)
+ *    and cooldown (b)
+ * 5. Blink the LDE based on the determined interval
+ * 6. If current_state is 4, start pulling over
+ */
+
 void loop() {
-  // put your main code here, to run repeatedly:
-  
+
+  //Steps 1 and 2
   drive(line_tracking(), ultrasonic());
 
+  //Step 3
   if(Serial.read()) {
     time_distracted++;
   } else {
     cooldown++;
   }
-  
+
+  //Step 4a
   if(time_distracted == 500) {
     time_distracted = 0;
     current_state++;
     change_state();
   }
 
+  //Step 4b
   if(cooldown == 1000) {
     time_distracted = 0;
     cooldown = 0;
@@ -234,6 +254,7 @@ void loop() {
     change_state();
   }
 
+  //Step 5
   now = millis();
   if(now > last_check + interval) {
     last_check = now;
@@ -245,6 +266,7 @@ void loop() {
     }
   }
 
+  //Step 6
   if(current_state == 4) {
     //TODO write pull over protocol
     exit(0);  
