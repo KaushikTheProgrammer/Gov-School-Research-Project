@@ -6,6 +6,7 @@ from random import shuffle
 from tqdm import tqdm
 
 
+# Takes numPictures from the webcam and saves each one to savePath, specifying imageType in the name of the file
 def takePictures(numPictures, savePath, imageType, **kwargs):
     cap = cv2.VideoCapture(0)
     
@@ -18,10 +19,11 @@ def takePictures(numPictures, savePath, imageType, **kwargs):
             cv2.imwrite(path, frame)
             print(i, "file saved")
             time.sleep(0.05)
+
     cap.release()
 
 
-def collectAllData(savePath, **kwargs):
+def collectData(savePath, **kwargs):
     takePictures(numPictures=45, savePath=savePath, imageType="focused")
     takePictures(numPictures=15, savePath=savePath, imageType="distracted")
 
@@ -45,7 +47,7 @@ def saveData(dataLoc, dataType, **kwargs):
 
 
 print("Collecting Data")
-collectAllData("dataset/")
+collectData("dataset/")
 print("Data Collection Complete")
 print("Getting training and testing")
 saveData(dataLoc="dataset/", dataType="training")
