@@ -21,17 +21,6 @@
  *     - driveFR: Front right drive motor port
  *     - driveBL: Back left drive motor port
  *     - driveBR: Back right drive motor port
- *   - Drive Modes:
- *     - keep_straight: Keep the car going straight
- *     - turn_right: Turn car right 
- *     - turn_left: Turn car left
- *   - TURNING_CONSTANT: Defines how sharply the robot will turn
- *                       when it determines it must
- *   - STOPPING_DISTANCE: Defines how far away in cm from an object
- *                        the car must stop if it must
- *   - Sensors
- *     - Left line sensor: 1
- *     - Right line sensor: 2
  *   - Ultrasonic Sensor Pins:
  *     - trigger_pin: Sensor trigger pin
  *     - echo_pin: Sensor echo pin
@@ -42,17 +31,6 @@
 #define driveFR 2
 #define driveBL 3
 #define driveBR 4
-
-#define keep_straight 0
-#define turn_right 1
-#define turn_left -1
-
-#define TURNING_CONSTANT 50
-
-#define STOPPING_DISTANCE 20
-
-#define lineLeft 1
-#define lineRight 2
 
 #define trigger_pin 1
 #define echo_pin 2
@@ -92,10 +70,6 @@ void setup() {
   last_check = millis();
   led = false;
 
-  //Set line sensor pins to input pins
-  pinMode(lineLeft, INPUT);
-  pinMode(lineRight, INPUT);
-
   //Set drive motor pins to output pins
   pinMode(driveFL, OUTPUT);
   pinMode(driveFR, OUTPUT);
@@ -118,45 +92,21 @@ void setup() {
  * 
  */
 
-void drive(int turn_mode) {
+void drive() {
+
+  int target = 10;
+  int current_value = sensor.measureDistanceCm();
+  int error = current_value - target;
+
+  int kP = 1.00;
 
   // Each motor starts with y as the base power
   // and x is then either added or subtracted
   // based on which side of the car the motor is on.
-  analogWrite(driveFL, 127 + turn_mode * TURNING_CONSTANT);
-  analogWrite(driveFR, 127 - turn_mode * TURNING_CONSTANT);
-  analogWrite(driveBL, 127 + turn_mode * TURNING_CONSTANT);
-  analogWrite(driveBR, 127 - turn_mode * TURNING_CONSTANT);
-}
-
-/*
- * Line Tracking Function:
- * 
- * Takes information from both line sensors and
- * determines whether to turn left, turn right,
- * or keep going straight.
- */
-
-int line_tracking() {
-
-  /*
-   *  Line Sensor Truth Table:
-   *  
-   *   Left | Right | Result
-   *  ------------------------ 
-   *    0   |   0   |  Stop
-   *    1   |   0   |  Left
-   *    0   |   1   |  Right
-   *    1   |   1   | Straight
-   */
-  
-  if(digitalRead(lineLeft) && digitalRead(lineRight)) {
-    return keep_straight;
-  } else if(digitalRead(lineLeft) && !digitalRead(lineRight)) {
-    return turn_right;
-  } else if(!digitalRead(lineLeft) && digitalRead(lineRight)) {
-    return turn_left;
-  }
+  analogWrite(driveFL, 127 + error * kP);
+  analogWrite(driveFR, 127 - error * kP);
+  analogWrite(driveBL, 127 + error * kP);
+  analogWrite(driveBR, 127 - error * kP);
 }
 
 /*
@@ -208,7 +158,7 @@ int change_state() {
 void loop() {
 
   //Steps 1 and 2
-  drive(line_tracking());
+  drive();
 
   //Step 3
   if(Serial.read()) {
