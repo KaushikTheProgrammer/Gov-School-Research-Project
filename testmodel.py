@@ -14,7 +14,10 @@ while(True):
     newFrame = np.array(cv2.resize(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), (64, 64))).reshape(-1,64,64,1)
     prediction = np.rint(model.predict(newFrame))
     
-    if prediction == []
+    if prediction == [0, 1]:
+        # Send yes flag here
+    else:
+        # Send no flag here
 
     # Display the resulting frame
     cv2.imshow('frame',frame)
