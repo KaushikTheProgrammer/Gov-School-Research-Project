@@ -16,8 +16,10 @@ while(True):
     
     if prediction == [0, 1]:
         # Send yes flag here
+        continue
     else:
         # Send no flag here
+        continue
 
     # Display the resulting frame
     cv2.imshow('frame',frame)
