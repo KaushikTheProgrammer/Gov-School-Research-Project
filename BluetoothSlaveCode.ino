@@ -18,7 +18,7 @@
 // Remember to use a voltage divider on the Arduino TX pin / Bluetooth RX pin
 // Download AltSoftSerial from https://www.pjrc.com/teensy/td_libs_AltSoftSerial.html
  
-include <AltSoftSerial.h>
+#include <AltSoftSerial.h>
 AltSoftSerial BTserial; 
  
 // Change DEBUG to true to output debug information to the serial monitor
