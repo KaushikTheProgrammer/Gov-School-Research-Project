@@ -127,7 +127,7 @@ int previous_error = readPing();
 
 void drive() {
 
-  int target = 25;
+  int target = 10;
   int current_value = readPing();
   
   int error = current_value - target;
@@ -140,9 +140,9 @@ void drive() {
 
   int d_error = error - previous_error;
 
-  int kP = 8.00;
-  int kI = 1.00;
-  int kD = 2.00;
+  double kP = 0.0100;
+  double kI = 0.0050;
+  double kD = 0.0200;
 
   // Each motor starts with y as the base power
   // and x is then either added or subtracted
@@ -152,10 +152,20 @@ void drive() {
   rightMotor1.run(0x01);
   rightMotor2.run(0x01);
 
-  leftMotor1.setSpeed(100 + (error * kP + total_error * kI + d_error * kD));
-  leftMotor2.setSpeed(100 + (error * kP + total_error * kI + d_error * kD));
-  rightMotor1.setSpeed(100 - (error * kP + total_error * kI + d_error * kD));
-  rightMotor2.setSpeed(100 - (error * kP + total_error * kI + d_error * kD));
+  double left_command = 0.5 + (kP * error + kI * total_error + kD * d_error);
+
+  if(left_command > 1) left_command = 1;
+  if(left_command < 0) left_command = 0;
+  
+  double right_command = 0.5 - (kP * error + kI * total_error + kD * d_error);
+
+  if(right_command > 1) right_command = 1;
+  if(right_command < 0) right_command = 0;
+
+  leftMotor1.setSpeed(255 * left_command);
+  leftMotor2.setSpeed(255 * left_command);
+  rightMotor1.setSpeed(255 * right_command);
+  rightMotor2.setSpeed(255 * right_command);
 }
 
 /*
