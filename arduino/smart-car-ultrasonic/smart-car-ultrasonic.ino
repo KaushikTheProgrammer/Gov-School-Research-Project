@@ -55,6 +55,7 @@ UC_DCMotor rightMotor2(2, MOTOR34_64KHZ);
 
 //UltraSonicDistanceSensor sensor(trigger_pin, echo_pin);
 int current_state;
+
 int time_distracted;
 int cooldown;
 int last_check;
@@ -90,7 +91,7 @@ int readPing()
   digitalWrite(trigger_pin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigger_pin, HIGH);
-  delayMicroseconds(5);
+  delayMicroseconds(3);
   digitalWrite(trigger_pin, LOW);
 
   pinMode(echo_pin, INPUT);
@@ -121,13 +122,27 @@ long microsecondsToCentimeters(long microseconds)
 
 */
 
+int total_error = 0;
+int previous_error = readPing();
+
 void drive() {
 
-  int target = 20;
+  int target = 25;
   int current_value = readPing();
+  
   int error = current_value - target;
+  
+  if(fabs(error) < 1.0) {
+    total_error += error;
+  } else {
+    total_error = 0;  
+  }
+
+  int d_error = error - previous_error;
 
   int kP = 8.00;
+  int kI = 1.00;
+  int kD = 2.00;
 
   // Each motor starts with y as the base power
   // and x is then either added or subtracted
@@ -137,10 +152,10 @@ void drive() {
   rightMotor1.run(0x01);
   rightMotor2.run(0x01);
 
-  leftMotor1.setSpeed(100 + error * kP);
-  leftMotor2.setSpeed(100 + error * kP);
-  rightMotor1.setSpeed(100 - error * kP);
-  rightMotor2.setSpeed(100 - error * kP);
+  leftMotor1.setSpeed(100 + (error * kP + total_error * kI + d_error * kD));
+  leftMotor2.setSpeed(100 + (error * kP + total_error * kI + d_error * kD));
+  rightMotor1.setSpeed(100 - (error * kP + total_error * kI + d_error * kD));
+  rightMotor2.setSpeed(100 - (error * kP + total_error * kI + d_error * kD));
 }
 
 /*
