@@ -142,7 +142,7 @@ void drive() {
 
   double kP = 0.0100;
   double kI = 0.0050;
-  double kD = 0.0200;
+  double kD = 0.0800;
 
   // Each motor starts with y as the base power
   // and x is then either added or subtracted
@@ -214,10 +214,37 @@ int change_state() {
    6. If current_state is 4, start pulling over
 */
 
+void pull_over() {
+  leftMotor1.run(0x01);
+  leftMotor2.run(0x01);
+  rightMotor1.run(0x01);
+  rightMotor2.run(0x01);
+  
+  for(double x = 0; x < 100; x++) {
+    leftMotor1.setSpeed(128 + (-0.008 * pow(x - 50, 2) + 20));
+    leftMotor2.setSpeed(128 + (-0.008 * pow(x - 50, 2) + 20));
+    rightMotor1.setSpeed(128 +(0.008 * pow(x - 50, 2) - 20));
+    rightMotor2.setSpeed(128 +(0.008 * pow(x - 50, 2) - 20));
+    
+    delay(20);
+  }
+
+  leftMotor1.setSpeed(0);
+  leftMotor2.setSpeed(0);
+  rightMotor1.setSpeed(0);
+  rightMotor2.setSpeed(0);
+  
+}
+
+int t = 0;
 void loop() {
 
   //Steps 1 and 2
   drive();
+
+  //if(t == 0)
+  //  pull_over();
+  //t++;
 
 /*
   //Step 3
