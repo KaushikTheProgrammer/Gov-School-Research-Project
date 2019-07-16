@@ -55,6 +55,7 @@ UC_DCMotor rightMotor2(2, MOTOR34_64KHZ);
 
 //UltraSonicDistanceSensor sensor(trigger_pin, echo_pin);
 int current_state;
+
 int time_distracted;
 int cooldown;
 int last_check;
@@ -90,7 +91,7 @@ int readPing()
   digitalWrite(trigger_pin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigger_pin, HIGH);
-  delayMicroseconds(5);
+  delayMicroseconds(3);
   digitalWrite(trigger_pin, LOW);
 
   pinMode(echo_pin, INPUT);
@@ -121,13 +122,27 @@ long microsecondsToCentimeters(long microseconds)
 
 */
 
+int total_error = 0;
+int previous_error = readPing();
+
 void drive() {
 
-  int target = 20;
+  int target = 10;
   int current_value = readPing();
+  
   int error = current_value - target;
+  
+  if(fabs(error) < 1.0) {
+    total_error += error;
+  } else {
+    total_error = 0;  
+  }
 
-  int kP = 8.00;
+  int d_error = error - previous_error;
+
+  double kP = 0.0100;
+  double kI = 0.0050;
+  double kD = 0.0800;
 
   // Each motor starts with y as the base power
   // and x is then either added or subtracted
@@ -137,10 +152,20 @@ void drive() {
   rightMotor1.run(0x01);
   rightMotor2.run(0x01);
 
-  leftMotor1.setSpeed(100 + error * kP);
-  leftMotor2.setSpeed(100 + error * kP);
-  rightMotor1.setSpeed(100 - error * kP);
-  rightMotor2.setSpeed(100 - error * kP);
+  double left_command = 0.5 + (kP * error + kI * total_error + kD * d_error);
+
+  if(left_command > 1) left_command = 1;
+  if(left_command < 0) left_command = 0;
+  
+  double right_command = 0.5 - (kP * error + kI * total_error + kD * d_error);
+
+  if(right_command > 1) right_command = 1;
+  if(right_command < 0) right_command = 0;
+
+  leftMotor1.setSpeed(255 * left_command);
+  leftMotor2.setSpeed(255 * left_command);
+  rightMotor1.setSpeed(255 * right_command);
+  rightMotor2.setSpeed(255 * right_command);
 }
 
 /*
@@ -189,10 +214,37 @@ int change_state() {
    6. If current_state is 4, start pulling over
 */
 
+void pull_over() {
+  leftMotor1.run(0x01);
+  leftMotor2.run(0x01);
+  rightMotor1.run(0x01);
+  rightMotor2.run(0x01);
+  
+  for(double x = 0; x < 100; x++) {
+    leftMotor1.setSpeed(128 + (-0.008 * pow(x - 50, 2) + 20));
+    leftMotor2.setSpeed(128 + (-0.008 * pow(x - 50, 2) + 20));
+    rightMotor1.setSpeed(128 +(0.008 * pow(x - 50, 2) - 20));
+    rightMotor2.setSpeed(128 +(0.008 * pow(x - 50, 2) - 20));
+    
+    delay(20);
+  }
+
+  leftMotor1.setSpeed(0);
+  leftMotor2.setSpeed(0);
+  rightMotor1.setSpeed(0);
+  rightMotor2.setSpeed(0);
+  
+}
+
+int t = 0;
 void loop() {
 
   //Steps 1 and 2
   drive();
+
+  //if(t == 0)
+  //  pull_over();
+  //t++;
 
 /*
   //Step 3
