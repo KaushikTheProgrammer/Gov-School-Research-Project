@@ -12,6 +12,7 @@
     - Library for Ultrasonic Sensor HC-SR04
 */
 #include <HCSR04.h>
+#include <Servo.h>
 
 /*
     Defined Constants:
@@ -36,8 +37,12 @@ UC_DCMotor rightMotor2(2, MOTOR34_64KHZ);
 #define trigger_pin A2
 #define echo_pin A3
 
-#define led_port 0
+#define leftSensor    A0
+#define middleSensor  A1
+#define rightSensor   13
 
+#define speaker_pin 10
+Servo servo;
 /*
    Global Variables
     - sensor: Reference to ultrasonic sensor
@@ -62,21 +67,21 @@ int now;
 long interval;
 boolean led;
 
+int base_speed = 100;
+
 void setup() {
   //Set data rate for bluetooth input
-  Serial.begin(38400);
+  Serial.begin(115200);
 
   //Set all global variables for normal, attentive operation
   current_state = 0;
   time_distracted = 0;
-  last_check = millis();
+  now = millis();
   led = false;
-
-  //Set LED pin to output pin
-  pinMode(led_port, OUTPUT);
 
   pinMode(trigger_pin, OUTPUT);
   pinMode(echo_pin, INPUT);
+  servo.attach(speaker_pin);
 }
 
 int readPing()
@@ -95,6 +100,8 @@ int readPing()
 
   pinMode(echo_pin, INPUT);
   duration = pulseIn(echo_pin, HIGH);
+
+  pinMode(speaker_pin, OUTPUT);
 
   // convert the time into a distance
   cm = microsecondsToCentimeters(duration);
@@ -122,74 +129,37 @@ long microsecondsToCentimeters(long microseconds)
 */
 
 void drive() {
-  int current_value = readPing();
-  
-  int error = current_value - target;
-  
-  if(fabs(error) < 1.0) {
-    total_error += error;
+  int line1 = digitalRead(leftSensor);
+  int line2 = digitalRead(middleSensor);
+  int line3 = digitalRead(rightSensor);
+
+  if(line1 == 1) {
+    leftMotor1.run(0x04);
+    leftMotor2.run(0x04);
+    rightMotor1.run(0x04);
+    rightMotor2.run(0x04);
+
+    base_speed = 255;
+  } else if(line3 == 1) {
+    leftMotor1.run(0x03);
+    leftMotor2.run(0x03);
+    rightMotor1.run(0x03);
+    rightMotor2.run(0x03);
+    
+    base_speed = 255;
   } else {
-    total_error = 0;  
+    leftMotor1.run(0x01);
+    leftMotor2.run(0x01);
+    rightMotor1.run(0x01);
+    rightMotor2.run(0x01);
+
+    base_speed = 100;
   }
 
-  int d_error = error - previous_error;
-
-  double kP = 0.0800;
-  double kI = 0.0000;
-  double kD = 0.0000;
-
-  // Each motor starts with y as the base power
-  // and x is then either added or subtracted
-  // based on which side of the car the motor is on.
-  leftMotor1.run(0x01);
-  leftMotor2.run(0x01);
-  rightMotor1.run(0x01);
-  rightMotor2.run(0x01);
-
-  double left_command = 0.20 + (kP * error + kI * total_error + kD * d_error);
-
-  if(left_command > 1) left_command = 1;
-  if(left_command < 0) left_command = 0;
-  
-  double right_command = 0.20 - (kP * error + kI * total_error + kD * d_error);
-
-  if(right_command > 1) right_command = 1;
-  if(right_command < 0) right_command = 0;
-
-  leftMotor1.setSpeed(255 * left_command);
-  leftMotor2.setSpeed(255 * left_command);
-  rightMotor1.setSpeed(255 * right_command);
-  rightMotor2.setSpeed(255 * right_command);
-}
-
-/*
-   Change State Function:
-
-   Changes the state of the LED blink interval
-   based on the current_state of the program.
-*/
-
-int change_state() {
-  switch (current_state) {
-    case 0:
-      // interval set to 1 * 10^6 s to make sure LED
-      // does not blink during attentive operation
-      interval = 1e6;
-      break;
-    case 1:
-      // interval is 1 s during slight distraction
-      interval = 1000;
-      break;
-    case 2:
-      // interval is 0.5 s during moderate distraction
-      interval = 500;
-      break;
-    case 3:
-      // interval is 0 s during severe distractions
-      // This ensures that the LED is constantly on
-      interval = 0;
-      break;
-  }
+  leftMotor1.setSpeed(base_speed);
+  leftMotor2.setSpeed(base_speed);
+  rightMotor1.setSpeed(base_speed);
+  rightMotor2.setSpeed(base_speed);
 }
 
 /*
@@ -230,13 +200,53 @@ void pull_over() {
   
 }
 
+void sound_buzzer(int level, boolean speaker) {
+
+  int melody[] = {
+    3500, 4978
+  };
+
+  if(speaker) {
+    tone(speaker_pin, melody[level]);
+    delay(10);
+  } else {
+    noTone(speaker_pin);
+  }
+}
+
 int t = 0;
-int flag = 0;
+
+boolean speaker = false;
+
 void loop() {
 
   //Steps 1 and 2
-  drive();
+  //drive();
 
+    int flag = Serial.readString().toInt();
+    Serial.println(flag);
+    if(flag == 1)
+      servo.write(90);
+    else
+      servo.write(180);
+
+//  switch(flag) {
+//    case 1:
+//      drive();
+//      break;
+//    case 2:
+//      if(millis() - now > 1000) {
+//        speaker = !speaker;
+//        //sound_buzzer(0, speaker);
+//        now = millis();
+//      }
+//      break;
+//    case 3:
+//      pull_over();
+//      break;
+//  }
+
+/*
   //if(t == 0)
   //  pull_over();
   //t++;

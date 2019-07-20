@@ -37,8 +37,6 @@ UC_DCMotor rightMotor2(2, MOTOR34_64KHZ);
 #define trigger_pin A2
 #define echo_pin A3
 
-#define led_port 0
-
 /*
    Global Variables
     - sensor: Reference to ultrasonic sensor
@@ -63,9 +61,11 @@ int now;
 long interval;
 boolean led;
 
+#define SPEAKER_PIN 13
+
 void setup() {
   //Set data rate for bluetooth input
-  Serial.begin(38400);
+  Serial.begin(115200);
 
   //Set all global variables for normal, attentive operation
   current_state = 0;
@@ -73,11 +73,12 @@ void setup() {
   last_check = millis();
   led = false;
 
-  //Set LED pin to output pin
-  pinMode(led_port, OUTPUT);
-
   pinMode(trigger_pin, OUTPUT);
   pinMode(echo_pin, INPUT);
+
+  pinMode(SPEAKER_PIN, OUTPUT);
+
+  now = millis();
 }
 
 int readPing()
@@ -122,11 +123,10 @@ long microsecondsToCentimeters(long microseconds)
 
 */
 
-int target = 6;
+int target = 8;
 
 int total_error = 0;
 int previous_error = readPing();
-double baseSpeed = 85.0;
 
 void drive() {
   int current_value = readPing();
@@ -140,14 +140,14 @@ void drive() {
   }
 
   int d_error = error - previous_error;
+  
+  //if(fabs(d_error) > 10)
+  //  target = current_value;
 
-  double kP = 0.0800;
+  double kP = 0.1000;
   double kI = 0.0000;
   double kD = 0.0000;
 
-  // Each motor starts with y as the base power
-  // and x is then either added or subtracted
-  // based on which side of the car the motor is on.
   leftMotor1.run(0x01);
   leftMotor2.run(0x01);
   rightMotor1.run(0x01);
@@ -155,36 +155,39 @@ void drive() {
   
   double base_command = kP * error + kI * total_error + kD * d_error;
 
-  if (base_command < 0) {
-    base_command *= 1;
-    leftMotor1.run(0x02);
-    leftMotor2.run(0x02);
-    rightMotor1.run(0x02);
-    rightMotor2.run(0x02);
-  } else if (base_command > 1) {
-    base_command = 1;
-  } 
+  double left_command = 0.15 + base_command;
+  double right_command = 0.15 - base_command;
 
-  base_command *= baseSpeed;
+  if(left_command > 1) left_command = 1;
+  if(left_command < 0) left_command = 0;
 
-  double right_command = base_command + baseSpeed;
-  double left_command = base_command - baseSpeed;
+  if(right_command > 1) right_command = 1;
+  if(right_command < 0) right_command = 0;
+
+  leftMotor1.setSpeed(255 * left_command);
+  leftMotor2.setSpeed(255 * left_command);
+  rightMotor1.setSpeed(255 * right_command);
+  rightMotor2.setSpeed(255 * right_command);
 
   Serial.print(base_command);
-  Serial.print('\t');
-  Serial.print(right_command);
-  Serial.print('\t');
-  Serial.println(left_command);
-  
-  
-  leftMotor1.setSpeed(base_command += baseSpeed);
-  leftMotor2.setSpeed(base_command += baseSpeed);
-  rightMotor1.setSpeed(base_command -= baseSpeed);
-  rightMotor2.setSpeed(base_command -= baseSpeed);
+  Serial.print("\t");
+  Serial.print(left_command);
+  Serial.print("\t");
+  Serial.println(right_command);
+
 }
 
-void sound_buzzer() {
-  
+void sound_buzzer(int level, boolean speaker) {
+
+  int melody[] = {
+    3500, 4978
+  };
+
+  if(speaker) {
+    tone(SPEAKER_PIN, melody[level]);
+  } else {
+    noTone(SPEAKER_PIN);
+  }
 }
 
 void pull_over() {
@@ -209,26 +212,30 @@ void pull_over() {
   
 }
 
-String flag = "";
+int flag = 2;
+boolean speaker = false;
 void loop() {
 
-  //drive();
+  drive();
 
   if(Serial.available()) {
-    flag = Serial.readString();
+    flag = Serial.readString().toInt();
     Serial.println(flag);
+  }
 
-    switch(flag) {
-      case "1":
-        break;
-      case "2":
-        sound_buzzer();
-        break;
-      case "3":
-        pull_over();
-        break;
-    }
-    
+  switch(flag) {
+    case 1:
+      break;
+    case 2:
+      if(millis() - now > 200) {
+        speaker = !speaker;
+        sound_buzzer(0, speaker);
+        now = millis();
+      }
+      break;
+    case 3:
+      pull_over();
+      break;
   }
 
 }
