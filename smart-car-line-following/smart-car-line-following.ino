@@ -12,8 +12,6 @@
     - Library for Ultrasonic Sensor HC-SR04
 */
 #include <HCSR04.h>
-#include <Servo.h>
-
 /*
     Defined Constants:
      - Drive Motors
@@ -41,8 +39,7 @@ UC_DCMotor rightMotor2(2, MOTOR34_64KHZ);
 #define middleSensor  A1
 #define rightSensor   13
 
-#define speaker_pin 10
-Servo servo;
+#define led_pin 10
 /*
    Global Variables
     - sensor: Reference to ultrasonic sensor
@@ -65,9 +62,8 @@ int cooldown;
 int last_check;
 int now;
 long interval;
-boolean led;
 
-int base_speed = 100;
+int base_speed = 250;
 
 void setup() {
   //Set data rate for bluetooth input
@@ -77,11 +73,13 @@ void setup() {
   current_state = 0;
   time_distracted = 0;
   now = millis();
-  led = false;
 
   pinMode(trigger_pin, OUTPUT);
   pinMode(echo_pin, INPUT);
-  servo.attach(speaker_pin);
+
+  pinMode(led_pin, OUTPUT);
+
+  delay(1000);
 }
 
 int readPing()
@@ -101,7 +99,7 @@ int readPing()
   pinMode(echo_pin, INPUT);
   duration = pulseIn(echo_pin, HIGH);
 
-  pinMode(speaker_pin, OUTPUT);
+  pinMode(led_pin, OUTPUT);
 
   // convert the time into a distance
   cm = microsecondsToCentimeters(duration);
@@ -139,21 +137,18 @@ void drive() {
     rightMotor1.run(0x04);
     rightMotor2.run(0x04);
 
-    base_speed = 255;
   } else if(line3 == 1) {
     leftMotor1.run(0x03);
     leftMotor2.run(0x03);
     rightMotor1.run(0x03);
     rightMotor2.run(0x03);
     
-    base_speed = 255;
   } else {
     leftMotor1.run(0x01);
     leftMotor2.run(0x01);
     rightMotor1.run(0x01);
     rightMotor2.run(0x01);
 
-    base_speed = 100;
   }
 
   leftMotor1.setSpeed(base_speed);
@@ -179,125 +174,133 @@ void drive() {
 */
 
 void pull_over() {
-  leftMotor1.run(0x01);
-  leftMotor2.run(0x01);
-  rightMotor1.run(0x01);
-  rightMotor2.run(0x01);
-  
-  for(double x = 0; x < 100; x++) {
-    leftMotor1.setSpeed(128 + (-0.008 * pow(x - 50, 2) + 20));
-    leftMotor2.setSpeed(128 + (-0.008 * pow(x - 50, 2) + 20));
-    rightMotor1.setSpeed(128 +(0.008 * pow(x - 50, 2) - 20));
-    rightMotor2.setSpeed(128 +(0.008 * pow(x - 50, 2) - 20));
-    
-    delay(20);
-  }
+  leftMotor1.run(0x03);
+  leftMotor2.run(0x03);
+  rightMotor1.run(0x03);
+  rightMotor2.run(0x03);
+
+  leftMotor1.setSpeed(150);
+  leftMotor2.setSpeed(150);
+  rightMotor1.setSpeed(150);
+  rightMotor2.setSpeed(150);
+
+  delay(375);
 
   leftMotor1.setSpeed(0);
   leftMotor2.setSpeed(0);
   rightMotor1.setSpeed(0);
   rightMotor2.setSpeed(0);
-  
-}
 
-void sound_buzzer(int level, boolean speaker) {
+  delay(250);
 
-  int melody[] = {
-    3500, 4978
-  };
+  leftMotor1.run(0x02);
+  leftMotor2.run(0x02);
+  rightMotor1.run(0x02);
+  rightMotor2.run(0x02);
 
-  if(speaker) {
-    tone(speaker_pin, melody[level]);
-    delay(10);
-  } else {
-    noTone(speaker_pin);
-  }
+  leftMotor1.setSpeed(90);
+  leftMotor2.setSpeed(90);
+  rightMotor1.setSpeed(90);
+  rightMotor2.setSpeed(90);
+
+  delay(750);
+
+  leftMotor1.setSpeed(0);
+  leftMotor2.setSpeed(0);
+  rightMotor1.setSpeed(0);
+  rightMotor2.setSpeed(0);
+
+  delay(250);
+
+  leftMotor1.run(0x04);
+  leftMotor2.run(0x04);
+  rightMotor1.run(0x04);
+  rightMotor2.run(0x04);
+
+  leftMotor1.setSpeed(150);
+  leftMotor2.setSpeed(150);
+  rightMotor1.setSpeed(150);
+  rightMotor2.setSpeed(150);
+
+  delay(375);
+
+  leftMotor1.setSpeed(0);
+  leftMotor2.setSpeed(0);
+  rightMotor1.setSpeed(0);
+  rightMotor2.setSpeed(0);
+
+  delay(250);
+
+  leftMotor1.run(0x01);
+  leftMotor2.run(0x01);
+  rightMotor1.run(0x01);
+  rightMotor2.run(0x01);
+
+  leftMotor1.setSpeed(75);
+  leftMotor2.setSpeed(75);
+  rightMotor1.setSpeed(75);
+  rightMotor2.setSpeed(75);
+
+  delay(600);
+
+  leftMotor1.setSpeed(0);
+  leftMotor2.setSpeed(0);
+  rightMotor1.setSpeed(0);
+  rightMotor2.setSpeed(0);
+
+  delay(250);
+
 }
 
 int t = 0;
+int flag = 0;
+boolean led = false;
+int c = 0;
 
-boolean speaker = false;
+boolean done = false;
+boolean block = false;
 
 void loop() {
+  if(!done) {
+    if(Serial.available() && !block) {
+      flag = Serial.read();
+    }
 
-  //Steps 1 and 2
-  //drive();
 
-    int flag = Serial.readString().toInt();
-    Serial.println(flag);
-    if(flag == 1)
-      servo.write(90);
-    else
-      servo.write(180);
-
-//  switch(flag) {
-//    case 1:
-//      drive();
-//      break;
-//    case 2:
-//      if(millis() - now > 1000) {
-//        speaker = !speaker;
-//        //sound_buzzer(0, speaker);
-//        now = millis();
-//      }
-//      break;
-//    case 3:
-//      pull_over();
-//      break;
-//  }
-
-/*
-  //if(t == 0)
-  //  pull_over();
-  //t++;
-
-  if(Serial.available()) {
-    flag = Serial.read();  
-  }
-
-  //Step 3
-  if (flag) {
-    cooldown = 0;
-    time_distracted++;
-    flag = 0;
-  } else {
-    cooldown++;
-  }
-
-  //Step 4a
-  if (time_distracted == 500) {
-    time_distracted = 0;
-    current_state++;
-    change_state();
-  }
-
-  //Step 4b
-  if (cooldown == 1000) {
-    time_distracted = 0;
-    cooldown = 0;
-    current_state--;
-    change_state();
-  }
-
-/*
-  //Step 5
-  now = millis();
-  if (now > last_check + interval) {
-    last_check = now;
-    led = !led;
-    if (led) {
-      digitalWrite(led_port, HIGH);
-    } else {
-      digitalWrite(led_port, LOW);
+    if(flag == '1') {
+      base_speed = 150;
+      drive();
+      digitalWrite(led_pin, LOW);
+    } else if(flag == '2') {
+      base_speed = 120;
+      drive();
+      if(millis() - now > 1000) {
+        now = millis();
+        led = !led;
+        if(led)
+          digitalWrite(led_pin, HIGH);
+        else
+          digitalWrite(led_pin, LOW);
+      }
+    } else if(flag == '3') {
+      block = true;
+      digitalWrite(led_pin, HIGH);
+      base_speed = 100;
+      drive();
+      if(readPing() > 18) {
+        c++;
+        if(c > 300) {
+          leftMotor1.setSpeed(0);
+          leftMotor2.setSpeed(0);
+          rightMotor1.setSpeed(0);
+          rightMotor2.setSpeed(0);
+          delay(1000);
+          pull_over();
+          done = true;
+        }
+      } else {
+        c = 0;  
+      }
     }
   }
-
-  //Step 6
-  if (current_state == 4) {
-//    if (sensor.measureDistanceCm() > 20) {
-      //TODO write pull over protocol
-//    }
-    exit(0);
-  }
-*/
 }
